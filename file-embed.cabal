@@ -5,7 +5,6 @@ license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
 maintainer:      Michael Snoyman <michael@snoyman.com>
 synopsis:        Use Template Haskell to embed file contents directly.
-description:     FIXME
 category:        Data
 stability:       unstable
 cabal-version:   >= 1.2
@@ -13,6 +12,9 @@ build-type:      Simple
 homepage:        http://github.com/snoyberg/file-embed/tree/master
 
 library
-    build-depends:   base
-    exposed-modules: 
+    build-depends:   base >= 4 && < 5,
+                     bytestring >= 0.9.1.4 && < 1,
+                     directory >= 1.0.0.3 && < 2,
+                     template-haskell
+    exposed-modules: Data.FileEmbed
     ghc-options:     -Wall
