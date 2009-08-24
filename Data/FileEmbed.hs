@@ -5,8 +5,8 @@ module Data.FileEmbed
     ) where
 
 import Language.Haskell.TH (runQ,
-                            Exp(AppE, ListE, LitE, TupE),
-                            Lit(IntegerL, StringL),
+                            Exp (AppE, ListE, LitE, TupE),
+                            Lit (StringL),
                             Q,
                             runIO)
 import System.Directory (doesDirectoryExist, doesFileExist,
@@ -30,13 +30,13 @@ pairToExp (path, bs) = do
 
 bsToExp :: B.ByteString -> Q Exp
 bsToExp bs = do
-    pack <- runQ [| B.pack |]
-    return $!
-        AppE pack .
-        ListE .
-        map (LitE . IntegerL . fromIntegral) .
-        B.unpack $
-        bs
+    helper <- runQ [| stringToBs |]
+    let octets = B.unpack bs
+    let chars = map (toEnum . fromEnum) octets
+    return $! AppE helper $! LitE $! StringL chars
+
+stringToBs :: String -> B.ByteString
+stringToBs = B.pack . map (toEnum . fromEnum)
 
 notHidden :: FilePath -> Bool
 notHidden ('.':_) = False
