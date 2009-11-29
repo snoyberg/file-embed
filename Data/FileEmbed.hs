@@ -2,6 +2,7 @@
 module Data.FileEmbed
     ( embedFile
     , embedDir
+    , getDir
     ) where
 
 import Language.Haskell.TH (runQ,
@@ -35,6 +36,12 @@ embedFile fp = (runIO $ B.readFile fp) >>= bsToExp
 -- > myDir = $(embedDir "dirName")
 embedDir :: FilePath -> Q Exp
 embedDir fp = ListE <$> ((runIO $ fileList fp) >>= mapM pairToExp)
+
+-- | Get a directory tree in the IO monad.
+--
+-- This is the workhorse of 'embedDir'
+getDir :: FilePath -> IO [(FilePath, B.ByteString)]
+getDir = fileList
 
 pairToExp :: (FilePath, B.ByteString) -> Q Exp
 pairToExp (path, bs) = do
