@@ -1,5 +1,5 @@
 name:            file-embed
-version:         0.0.3
+version:         0.0.3.1
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
@@ -14,7 +14,7 @@ homepage:        http://github.com/snoyberg/file-embed/tree/master
 library
     build-depends:   base >= 4 && < 5,
                      bytestring >= 0.9.1.4 && < 0.10,
-                     directory >= 1.0.0.3 && < 1.1,
+                     directory >= 1.0.0.3 && < 1.2,
                      template-haskell
     exposed-modules: Data.FileEmbed
     ghc-options:     -Wall
