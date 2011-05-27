@@ -9,7 +9,7 @@ import Data.List (sort)
 
 myeq x y = do
     y' <- y
-    x @=? y'
+    x @?= y'
 
 main = hspec $ descriptions
     [ describe "embedFile"
