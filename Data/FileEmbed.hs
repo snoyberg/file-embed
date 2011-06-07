@@ -1,20 +1,29 @@
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP #-}
 module Data.FileEmbed
     ( -- * Embed at compile time
       embedFile
     , embedDir
     , getDir
       -- * Inject into an executable
+#if MIN_VERSION_template_haskell(2,5,0)
     , dummySpace
+#endif
     , inject
     , injectFile
     ) where
 
-import Language.Haskell.TH (runQ,
-                            Exp (AppE, ListE, LitE, TupE),
-                            Lit (StringL, StringPrimL, IntegerL),
-                            Q,
-                            runIO)
+import Language.Haskell.TH.Syntax
+    ( runQ
+    , Exp (AppE, ListE, LitE, TupE)
+#if MIN_VERSION_template_haskell(2,5,0)
+    , Lit (StringL, StringPrimL, IntegerL)
+#else
+    , Lit (StringL, IntegerL)
+#endif
+    , Q
+    , runIO
+    )
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
 import Control.Monad (filterM)
@@ -57,7 +66,7 @@ pairToExp (path, bs) = do
 
 bsToExp :: B.ByteString -> Q Exp
 bsToExp bs = do
-    helper <- runQ [| stringToBs |]
+    helper <- [| stringToBs |]
     let chars = B8.unpack bs
     return $! AppE helper $! LitE $! StringL chars
 
@@ -101,6 +110,7 @@ padSize i =
     let s = show i
      in replicate (sizeLen - length s) '0' ++ s
 
+#if MIN_VERSION_template_haskell(2,5,0)
 dummySpace :: Int -> Q Exp
 dummySpace space = do
     let size = padSize space
@@ -111,6 +121,7 @@ dummySpace space = do
     pack <- [|unsafePackAddressLen|]
     getInner' <- [|getInner|]
     return $ getInner' `AppE` (upi `AppE` (pack `AppE` len `AppE` chars))
+#endif
 
 inject :: B.ByteString -- ^ bs to inject
        -> B.ByteString -- ^ original BS containing dummy
