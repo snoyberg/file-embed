@@ -23,6 +23,9 @@ import Language.Haskell.TH.Syntax
 #endif
     , Q
     , runIO
+#if MIN_VERSION_template_haskell(2,7,0)
+    , Quasi(qAddDependentFile)
+#endif
     )
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
@@ -42,7 +45,11 @@ import System.IO.Unsafe (unsafePerformIO)
 -- > myFile :: Data.ByteString.ByteString
 -- > myFile = $(embedFile "dirName/fileName")
 embedFile :: FilePath -> Q Exp
-embedFile fp = (runIO $ B.readFile fp) >>= bsToExp
+embedFile fp =
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile fp >>
+#endif
+  (runIO $ B.readFile fp) >>= bsToExp
 
 -- | Embed a directory recusrively in your source code.
 --
@@ -61,6 +68,9 @@ getDir = fileList
 
 pairToExp :: (FilePath, B.ByteString) -> Q Exp
 pairToExp (path, bs) = do
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile path
+#endif
     exp' <- bsToExp bs
     return $! TupE [LitE $ StringL path, exp']
 
