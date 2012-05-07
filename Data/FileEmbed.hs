@@ -58,7 +58,7 @@ embedFile fp =
 -- > myDir :: [(FilePath, Data.ByteString.ByteString)]
 -- > myDir = $(embedDir "dirName")
 embedDir :: FilePath -> Q Exp
-embedDir fp = ListE <$> ((runIO $ fileList fp) >>= mapM pairToExp)
+embedDir fp = ListE <$> ((runIO $ fileList fp) >>= mapM (pairToExp fp))
 
 -- | Get a directory tree in the IO monad.
 --
@@ -66,10 +66,10 @@ embedDir fp = ListE <$> ((runIO $ fileList fp) >>= mapM pairToExp)
 getDir :: FilePath -> IO [(FilePath, B.ByteString)]
 getDir = fileList
 
-pairToExp :: (FilePath, B.ByteString) -> Q Exp
-pairToExp (path, bs) = do
+pairToExp :: FilePath -> (FilePath, B.ByteString) -> Q Exp
+pairToExp root (path, bs) = do
 #if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile path
+    qAddDependentFile $ root ++ '/' : path
 #endif
     exp' <- bsToExp bs
     return $! TupE [LitE $ StringL path, exp']
