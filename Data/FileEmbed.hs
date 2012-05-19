@@ -14,8 +14,7 @@ module Data.FileEmbed
     ) where
 
 import Language.Haskell.TH.Syntax
-    ( runQ
-    , Exp (AppE, ListE, LitE, TupE)
+    ( Exp (AppE, ListE, LitE, TupE)
 #if MIN_VERSION_template_haskell(2,5,0)
     , Lit (StringL, StringPrimL, IntegerL)
 #else
@@ -105,7 +104,10 @@ fileList' realTop top = do
 liftPair2 :: Monad m => (a, m b) -> m (a, b)
 liftPair2 (a, b) = b >>= \b' -> return (a, b')
 
+magic :: [Char]
 magic = concat ["fe", "MS"]
+
+sizeLen :: Int
 sizeLen = 20
 
 getInner :: B.ByteString -> B.ByteString
@@ -147,7 +149,7 @@ inject toInj orig =
     size = case reads $ B8.unpack sizeBS of
             (i, _):_ -> i
             [] -> error $ "Data.FileEmbed (inject): Your dummy space has been corrupted. Size is: " ++ show sizeBS
-    (dummy, after) = B.splitAt size rest'
+    (_dummy, after) = B.splitAt size rest'
 
 injectFile :: B.ByteString
            -> FilePath -- ^ template file
