@@ -66,9 +66,9 @@ getDir :: FilePath -> IO [(FilePath, B.ByteString)]
 getDir = fileList
 
 pairToExp :: FilePath -> (FilePath, B.ByteString) -> Q Exp
-pairToExp root (path, bs) = do
+pairToExp _root (path, bs) = do
 #if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile $ root ++ '/' : path
+    qAddDependentFile $ _root ++ '/' : path
 #endif
     exp' <- bsToExp bs
     return $! TupE [LitE $ StringL path, exp']
@@ -149,7 +149,7 @@ inject toInj orig =
     size = case reads $ B8.unpack sizeBS of
             (i, _):_ -> i
             [] -> error $ "Data.FileEmbed (inject): Your dummy space has been corrupted. Size is: " ++ show sizeBS
-    (_dummy, after) = B.splitAt size rest'
+    after = B.drop size rest'
 
 injectFile :: B.ByteString
            -> FilePath -- ^ template file
