@@ -125,7 +125,11 @@ dummySpace :: Int -> Q Exp
 dummySpace space = do
     let size = padSize space
     let start = magic ++ size
-    let chars = LitE $ StringPrimL $ start ++ replicate space '0'
+    let chars = LitE $ StringPrimL $
+#if MIN_VERSION_template_haskell(2,6,0)
+            map (toEnum . fromEnum) $
+#endif
+            start ++ replicate space '0'
     let len = LitE $ IntegerL $ fromIntegral $ length start + space
     upi <- [|unsafePerformIO|]
     pack <- [|unsafePackAddressLen|]
