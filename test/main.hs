@@ -9,6 +9,6 @@ main :: IO ()
 main = do
     let received = $(embedDir "test/sample")
     received @?=
-        [ ("foo", "foo\n")
-        , ("bar" </> "baz", "baz\n")
+        [ ("foo", "foo\r\n")
+        , ("bar" </> "baz", "baz\r\n")
         ]
