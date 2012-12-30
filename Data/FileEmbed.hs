@@ -31,11 +31,11 @@ import System.Directory (doesDirectoryExist, doesFileExist,
 import Control.Monad (filterM)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
-import Control.Arrow ((&&&), second, first)
+import Control.Arrow ((&&&), second)
 import Control.Applicative ((<$>))
-import Data.Monoid (mappend)
 import Data.ByteString.Unsafe (unsafePackAddressLen)
 import System.IO.Unsafe (unsafePerformIO)
+import System.FilePath ((</>))
 
 -- | Embed a single file in your source code.
 --
@@ -90,14 +90,12 @@ notHidden ('.':_) = False
 notHidden _ = True
 
 fileList :: FilePath -> IO [(FilePath, B.ByteString)]
-fileList top = map (first tail) <$> fileList' top ""
+fileList top = fileList' top ""
 
 fileList' :: FilePath -> FilePath -> IO [(FilePath, B.ByteString)]
 fileList' realTop top = do
-    let prefix1 = top ++ "/"
-        prefix2 = realTop ++ prefix1
-    allContents <- filter notHidden <$> getDirectoryContents prefix2
-    let all' = map (mappend prefix1 &&& mappend prefix2) allContents
+    allContents <- filter notHidden <$> getDirectoryContents (realTop </> top)
+    let all' = map ((top </>) &&& (\x -> realTop </> top </> x)) allContents
     files <- filterM (doesFileExist . snd) all' >>=
              mapM (liftPair2 . second B.readFile)
     dirs <- filterM (doesDirectoryExist . snd) all' >>=

@@ -20,6 +20,7 @@ library
                    , bytestring         >= 0.9.1.4
                    , directory          >= 1.0.0.3
                    , template-haskell
+                   , filepath
     exposed-modules: Data.FileEmbed
     ghc-options:     -Wall
 
@@ -30,6 +31,7 @@ test-suite test
     build-depends: base
                  , file-embed
                  , HUnit
+                 , filepath
 
 source-repository head
   type:     git
