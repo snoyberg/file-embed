@@ -14,7 +14,7 @@ module Data.FileEmbed
     ) where
 
 import Language.Haskell.TH.Syntax
-    ( Exp (AppE, ListE, LitE, TupE)
+    ( Exp (AppE, ListE, LitE, TupE, SigE)
 #if MIN_VERSION_template_haskell(2,5,0)
     , Lit (StringL, StringPrimL, IntegerL)
 #else
@@ -57,7 +57,10 @@ embedFile fp =
 -- > myDir :: [(FilePath, Data.ByteString.ByteString)]
 -- > myDir = $(embedDir "dirName")
 embedDir :: FilePath -> Q Exp
-embedDir fp = ListE <$> ((runIO $ fileList fp) >>= mapM (pairToExp fp))
+embedDir fp = do
+    typ <- [t| [(FilePath, B.ByteString)] |]
+    e <- ListE <$> ((runIO $ fileList fp) >>= mapM (pairToExp fp))
+    return $ SigE e typ
 
 -- | Get a directory tree in the IO monad.
 --

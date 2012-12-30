@@ -29,6 +29,7 @@ test-suite test
     hs-source-dirs: test
     build-depends: base
                  , file-embed
+                 , HUnit
 
 source-repository head
   type:     git
