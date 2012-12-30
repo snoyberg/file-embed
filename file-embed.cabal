@@ -13,7 +13,7 @@ stability:       Stable
 cabal-version:   >= 1.8
 build-type:      Simple
 homepage:        https://github.com/snoyberg/file-embed
-extra-source-files: test/main.hs, test/sample/foo
+extra-source-files: test/main.hs, test/sample/foo, test/sample/bar/baz
 
 library
     build-depends:   base               >= 4       && < 5
