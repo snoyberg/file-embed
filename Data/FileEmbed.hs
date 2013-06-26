@@ -65,7 +65,7 @@ embedFile fp =
 #endif
   (runIO $ B.readFile fp) >>= bsToExp
 
--- | Embed a directory recusrively in your source code.
+-- | Embed a directory recursively in your source code.
 --
 -- > import qualified Data.ByteString
 -- >
