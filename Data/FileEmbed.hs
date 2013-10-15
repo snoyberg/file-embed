@@ -26,6 +26,8 @@ module Data.FileEmbed
 #endif
     , inject
     , injectFile
+      -- * Internal
+    , stringToBs
     ) where
 
 import Language.Haskell.TH.Syntax
