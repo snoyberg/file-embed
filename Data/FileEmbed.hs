@@ -18,6 +18,7 @@
 module Data.FileEmbed
     ( -- * Embed at compile time
       embedFile
+    , embedFile'
     , embedDir
     , getDir
       -- * Inject into an executable
@@ -45,6 +46,7 @@ import Language.Haskell.TH.Syntax
     )
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents)
+import Control.Exception (throw, ErrorCall(..))
 import Control.Monad (filterM)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
@@ -66,6 +68,28 @@ embedFile fp =
     qAddDependentFile fp >>
 #endif
   (runIO $ B.readFile fp) >>= bsToExp
+
+-- | Embed a single existing file in your source code
+-- out of list a list of paths supplied.
+--
+-- > import qualified Data.ByteString
+-- >
+-- > myFile :: Data.ByteString.ByteString
+-- > myFile = $(embedFile' [ "dirName/fileName", "src/dirName/fileName" ])
+embedFile' :: [FilePath] -> Q Exp
+embedFile' ps =
+  (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile path
+#endif
+    bsToExp content
+  where
+    readExistingFile :: [FilePath] -> IO ( FilePath, B.ByteString )
+    readExistingFile xs = do
+      ys <- filterM doesFileExist xs
+      case ys of
+        (p:_) -> B.readFile p >>= \ c -> return ( p, c )
+        _ -> throw $ ErrorCall "Cannot find file to embed as resource"
 
 -- | Embed a directory recursively in your source code.
 --
