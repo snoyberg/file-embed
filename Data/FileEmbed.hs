@@ -18,7 +18,7 @@
 module Data.FileEmbed
     ( -- * Embed at compile time
       embedFile
-    , embedFile'
+    , embedOneFileOf
     , embedDir
     , getDir
       -- * Inject into an executable
@@ -76,8 +76,8 @@ embedFile fp =
 -- >
 -- > myFile :: Data.ByteString.ByteString
 -- > myFile = $(embedFile' [ "dirName/fileName", "src/dirName/fileName" ])
-embedFile' :: [FilePath] -> Q Exp
-embedFile' ps =
+embedOneFileOf :: [FilePath] -> Q Exp
+embedOneFileOf ps =
   (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
 #if MIN_VERSION_template_haskell(2,7,0)
     qAddDependentFile path
