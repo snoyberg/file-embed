@@ -29,10 +29,11 @@ module Data.FileEmbed
     , injectFile
       -- * Internal
     , stringToBs
+    , bsToExp
     ) where
 
 import Language.Haskell.TH.Syntax
-    ( Exp (AppE, ListE, LitE, TupE, SigE)
+    ( Exp (AppE, ListE, LitE, TupE, SigE, VarE)
 #if MIN_VERSION_template_haskell(2,5,0)
     , Lit (StringL, StringPrimL, IntegerL)
 #else
@@ -118,10 +119,22 @@ pairToExp _root (path, bs) = do
     return $! TupE [LitE $ StringL path, exp']
 
 bsToExp :: B.ByteString -> Q Exp
+#if MIN_VERSION_template_haskell(2, 5, 0)
+bsToExp bs =
+    return $ VarE 'unsafePerformIO
+      `AppE` (VarE 'unsafePackAddressLen
+      `AppE` LitE (IntegerL $ fromIntegral $ B8.length bs)
+#if MIN_VERSION_template_haskell(2, 8, 0)
+      `AppE` LitE (StringPrimL $ B.unpack bs))
+#else
+      `AppE` LitE (StringPrimL $ B8.unpack bs))
+#endif
+#else
 bsToExp bs = do
     helper <- [| stringToBs |]
     let chars = B8.unpack bs
     return $! AppE helper $! LitE $! StringL chars
+#endif
 
 stringToBs :: String -> B.ByteString
 stringToBs = B8.pack
