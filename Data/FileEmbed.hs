@@ -187,11 +187,8 @@ dummySpace space = do
             map (toEnum . fromEnum) $
 #endif
             start ++ replicate space '0'
-    let len = LitE $ IntegerL $ fromIntegral $ length start + space
-    upi <- [|unsafePerformIO|]
-    pack <- [|unsafePackAddressLen|]
-    getInner' <- [|getInner|]
-    return $ getInner' `AppE` (upi `AppE` (pack `AppE` len `AppE` chars))
+    let len = fromIntegral $ length start + space :: Int
+    [| getInner (unsafePerformIO (unsafePackAddressLen len $(return chars))) |]
 #endif
 
 inject :: B.ByteString -- ^ bs to inject
