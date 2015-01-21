@@ -1,5 +1,5 @@
 name:            file-embed
-version:         0.0.7
+version:         0.0.7.1
 license:         BSD3
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
@@ -13,7 +13,9 @@ stability:       Stable
 cabal-version:   >= 1.8
 build-type:      Simple
 homepage:        https://github.com/snoyberg/file-embed
-extra-source-files: test/main.hs, test/sample/foo, test/sample/bar/baz
+extra-source-files: test/main.hs, test/sample/foo, test/sample/bar/baz,
+                    ChangeLog.md
+                    README.md
 
 library
     build-depends:   base               >= 4       && < 5
