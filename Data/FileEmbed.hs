@@ -1,5 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 -- | This module uses template Haskell. Following is a simplified explanation of usage for those unfamiliar with calling Template Haskell functions.
 --
 -- The function @embedFile@ in this modules embeds a file into the exceutable
@@ -24,9 +25,12 @@ module Data.FileEmbed
       -- * Inject into an executable
 #if MIN_VERSION_template_haskell(2,5,0)
     , dummySpace
+    , dummySpaceWith
 #endif
     , inject
     , injectFile
+    , injectWith
+    , injectFileWith
       -- * Internal
     , stringToBs
     , bsToExp
@@ -159,15 +163,15 @@ fileList' realTop top = do
 liftPair2 :: Monad m => (a, m b) -> m (a, b)
 liftPair2 (a, b) = b >>= \b' -> return (a, b')
 
-magic :: String
-magic = concat ["fe", "MS"]
+magic :: B.ByteString -> B.ByteString
+magic x = B8.concat ["fe", x]
 
 sizeLen :: Int
 sizeLen = 20
 
 getInner :: B.ByteString -> B.ByteString
 getInner b =
-    let (sizeBS, rest) = B.splitAt sizeLen $ B.drop (length magic) b
+    let (sizeBS, rest) = B.splitAt sizeLen b
      in case reads $ B8.unpack sizeBS of
             (i, _):_ -> B.take i rest
             [] -> error "Data.FileEmbed (getInner): Your dummy space has been corrupted."
@@ -179,40 +183,65 @@ padSize i =
 
 #if MIN_VERSION_template_haskell(2,5,0)
 dummySpace :: Int -> Q Exp
-dummySpace space = do
+dummySpace = dummySpaceWith "MS"
+
+-- | Like 'dummySpace', but takes a postfix for the magic string.  In
+-- order for this to work, the same postfix must be used by 'inject' /
+-- 'injectFile'.  This allows an executable to have multiple
+-- 'ByteString's injected into it, without encountering collisions.
+dummySpaceWith :: B.ByteString -> Int -> Q Exp
+dummySpaceWith postfix space = do
     let size = padSize space
-    let start = magic ++ size
-    let chars = LitE $ StringPrimL $
+        magic' = magic postfix
+        start = B8.unpack magic' ++ size
+        magicLen = B8.length magic'
+        len = magicLen + sizeLen + space
+        chars = LitE $ StringPrimL $
 #if MIN_VERSION_template_haskell(2,6,0)
             map (toEnum . fromEnum) $
 #endif
             start ++ replicate space '0'
-    let len = fromIntegral $ length start + space :: Int
-    [| getInner (unsafePerformIO (unsafePackAddressLen len $(return chars))) |]
+    [| getInner (B.drop magicLen (unsafePerformIO (unsafePackAddressLen len $(return chars)))) |]
 #endif
 
 inject :: B.ByteString -- ^ bs to inject
        -> B.ByteString -- ^ original BS containing dummy
        -> Maybe B.ByteString -- ^ new BS, or Nothing if there is insufficient dummy space
-inject toInj orig =
+inject = injectWith "MS"
+
+-- | Like 'inject', but takes a postfix for the magic string.
+injectWith :: B.ByteString -- ^ postfix of magic string
+           -> B.ByteString -- ^ bs to inject
+           -> B.ByteString -- ^ original BS containing dummy
+           -> Maybe B.ByteString -- ^ new BS, or Nothing if there is insufficient dummy space
+injectWith postfix toInj orig =
     if toInjL > size
         then Nothing
-        else Just $ B.concat [before, B8.pack magic, B8.pack $ padSize toInjL, toInj, B8.pack $ replicate (size - toInjL) '0', after]
+        else Just $ B.concat [before, magic', B8.pack $ padSize toInjL, toInj, B8.pack $ replicate (size - toInjL) '0', after]
   where
+    magic' = magic postfix
     toInjL = B.length toInj
-    (before, rest) = B.breakSubstring (B8.pack magic) orig
-    (sizeBS, rest') = B.splitAt sizeLen $ B.drop (length magic) rest
+    (before, rest) = B.breakSubstring magic' orig
+    (sizeBS, rest') = B.splitAt sizeLen $ B.drop (B8.length magic') rest
     size = case reads $ B8.unpack sizeBS of
             (i, _):_ -> i
             [] -> error $ "Data.FileEmbed (inject): Your dummy space has been corrupted. Size is: " ++ show sizeBS
     after = B.drop size rest'
 
-injectFile :: B.ByteString
+injectFile :: B.ByteString -- ^ bs to inject
            -> FilePath -- ^ template file
            -> FilePath -- ^ output file
            -> IO ()
-injectFile inj srcFP dstFP = do
+injectFile = injectFileWith "MS"
+
+-- | Like 'injectFile', but takes a postfix for the magic string.
+injectFileWith :: B.ByteString -- ^ postfix of magic string
+               -> B.ByteString -- ^ bs to inject
+               -> FilePath -- ^ template file
+               -> FilePath -- ^ output file
+               -> IO ()
+injectFileWith postfix inj srcFP dstFP = do
     src <- B.readFile srcFP
-    case inject inj src of
+    case injectWith postfix inj src of
         Nothing -> error "Insufficient dummy space"
         Just dst -> B.writeFile dstFP dst
