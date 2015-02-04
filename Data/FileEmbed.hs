@@ -189,6 +189,8 @@ dummySpace = dummySpaceWith "MS"
 -- order for this to work, the same postfix must be used by 'inject' /
 -- 'injectFile'.  This allows an executable to have multiple
 -- 'ByteString's injected into it, without encountering collisions.
+--
+-- Since 0.0.8
 dummySpaceWith :: B.ByteString -> Int -> Q Exp
 dummySpaceWith postfix space = do
     let size = padSize space
@@ -210,6 +212,8 @@ inject :: B.ByteString -- ^ bs to inject
 inject = injectWith "MS"
 
 -- | Like 'inject', but takes a postfix for the magic string.
+--
+-- Since 0.0.8
 injectWith :: B.ByteString -- ^ postfix of magic string
            -> B.ByteString -- ^ bs to inject
            -> B.ByteString -- ^ original BS containing dummy
@@ -235,6 +239,8 @@ injectFile :: B.ByteString -- ^ bs to inject
 injectFile = injectFileWith "MS"
 
 -- | Like 'injectFile', but takes a postfix for the magic string.
+--
+-- Since 0.0.8
 injectFileWith :: B.ByteString -- ^ postfix of magic string
                -> B.ByteString -- ^ bs to inject
                -> FilePath -- ^ template file
