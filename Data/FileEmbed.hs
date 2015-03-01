@@ -23,6 +23,7 @@ module Data.FileEmbed
     , embedDir
     , getDir
       -- * Inject into an executable
+      -- $inject
 #if MIN_VERSION_template_haskell(2,5,0)
     , dummySpace
     , dummySpaceWith
@@ -182,6 +183,8 @@ padSize i =
      in replicate (sizeLen - length s) '0' ++ s
 
 #if MIN_VERSION_template_haskell(2,5,0)
+-- | Allocate the given number of bytes in the generate executable. That space
+-- can be filled up with the 'inject' and 'injectFile' functions.
 dummySpace :: Int -> Q Exp
 dummySpace = dummySpaceWith "MS"
 
@@ -206,6 +209,9 @@ dummySpaceWith postfix space = do
     [| getInner (B.drop magicLen (unsafePerformIO (unsafePackAddressLen len $(return chars)))) |]
 #endif
 
+-- | Inject some raw data inside a @ByteString@ containing empty, dummy space
+-- (allocated with @dummySpace@). Typically, the original @ByteString@ is an
+-- executable read from the filesystem.
 inject :: B.ByteString -- ^ bs to inject
        -> B.ByteString -- ^ original BS containing dummy
        -> Maybe B.ByteString -- ^ new BS, or Nothing if there is insufficient dummy space
@@ -232,6 +238,9 @@ injectWith postfix toInj orig =
             [] -> error $ "Data.FileEmbed (inject): Your dummy space has been corrupted. Size is: " ++ show sizeBS
     after = B.drop size rest'
 
+-- | Same as 'inject', but instead of performing the injecting in memory, read
+-- the contents from the filesystem and write back to a different file on the
+-- filesystem.
 injectFile :: B.ByteString -- ^ bs to inject
            -> FilePath -- ^ template file
            -> FilePath -- ^ output file
@@ -251,3 +260,28 @@ injectFileWith postfix inj srcFP dstFP = do
     case injectWith postfix inj src of
         Nothing -> error "Insufficient dummy space"
         Just dst -> B.writeFile dstFP dst
+
+{- $inject
+
+The inject system allows arbitrary content to be embedded inside a Haskell
+executable, post compilation. Typically, file-embed allows you to read some
+contents from the file system at compile time and embed them inside your
+executable. Consider a case, instead, where you would want to embed these
+contents after compilation. Two real-world examples are:
+
+* You would like to embed a hash of the executable itself, for sanity checking in a network protocol. (Obviously the hash will change after you embed the hash.)
+
+* You want to create a self-contained web server that has a set of content, but will need to update the content on machines that do not have access to GHC.
+
+The typical workflow use:
+
+* Use 'dummySpace' or 'dummySpaceWith' to create some empty space in your executable
+
+* Use 'injectFile' or 'injectFileWith' from a separate utility to modify that executable to have the updated content.
+
+The reason for the @With@-variant of the functions is for cases where you wish
+to inject multiple different kinds of content, and therefore need control over
+the magic key. If you know for certain that there will only be one dummy space
+available, you can use the non-@With@ variants.
+
+-}

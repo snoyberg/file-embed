@@ -1,3 +1,7 @@
+## 0.0.8.2
+
+* Improve inject documentation [#11](https://github.com/snoyberg/file-embed/issues/11)
+
 ## 0.0.8.1
 
 Minor cleanup
