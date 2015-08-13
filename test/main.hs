@@ -12,3 +12,5 @@ main = do
         [ ("foo", "foo\r\n")
         , ("bar" </> "baz", "baz\r\n")
         ]
+    let str = $(embedStringFile "test/sample/foo") :: String
+    str @?= "foo\r\n"
