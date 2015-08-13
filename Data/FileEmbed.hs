@@ -22,6 +22,9 @@ module Data.FileEmbed
     , embedOneFileOf
     , embedDir
     , getDir
+      -- * Embed as a IsString
+    , embedStringFile
+    , embedOneStringFileOf
       -- * Inject into an executable
       -- $inject
 #if MIN_VERSION_template_haskell(2,5,0)
@@ -35,6 +38,7 @@ module Data.FileEmbed
       -- * Internal
     , stringToBs
     , bsToExp
+    , strToExp
     ) where
 
 import Language.Haskell.TH.Syntax
@@ -61,6 +65,8 @@ import Control.Applicative ((<$>))
 import Data.ByteString.Unsafe (unsafePackAddressLen)
 import System.IO.Unsafe (unsafePerformIO)
 import System.FilePath ((</>))
+import Data.String (fromString)
+import Prelude as P
 
 -- | Embed a single file in your source code.
 --
@@ -143,6 +149,47 @@ bsToExp bs = do
 
 stringToBs :: String -> B.ByteString
 stringToBs = B8.pack
+
+-- | Embed a single file in your source code.
+--
+-- > import Data.String
+-- >
+-- > myFile :: IsString a => a
+-- > myFile = $(embedStringFile "dirName/fileName")
+embedStringFile :: FilePath -> Q Exp
+embedStringFile fp =
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile fp >>
+#endif
+  (runIO $ P.readFile fp) >>= strToExp
+
+-- | Embed a single existing string file in your source code
+-- out of list a list of paths supplied.
+embedOneStringFileOf :: [FilePath] -> Q Exp
+embedOneStringFileOf ps =
+  (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile path
+#endif
+    strToExp content
+  where
+    readExistingFile :: [FilePath] -> IO ( FilePath, String )
+    readExistingFile xs = do
+      ys <- filterM doesFileExist xs
+      case ys of
+        (p:_) -> P.readFile p >>= \ c -> return ( p, c )
+        _ -> throw $ ErrorCall "Cannot find file to embed as resource"
+
+strToExp :: String -> Q Exp
+#if MIN_VERSION_template_haskell(2, 5, 0)
+strToExp s =
+    return $ VarE 'fromString
+      `AppE` LitE (StringL s)
+#else
+strToExp s = do
+    helper <- [| fromString |]
+    return $! AppE helper $! LitE $! StringL s
+#endif
 
 notHidden :: FilePath -> Bool
 notHidden ('.':_) = False
