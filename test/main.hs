@@ -1,9 +1,14 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+import Control.Monad (unless)
 import Data.FileEmbed
-import Test.HUnit ((@?=))
 import System.FilePath ((</>))
+
+infix 1 @?=
+
+(@?=) :: (Eq a, Show a) => a -> a -> IO ()
+actual @?= expected = unless (actual == expected) (error $ "expected: " ++ show expected ++ "\n but got: " ++ show actual)
 
 main :: IO ()
 main = do
