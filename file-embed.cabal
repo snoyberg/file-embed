@@ -32,7 +32,6 @@ test-suite test
     hs-source-dirs: test
     build-depends: base
                  , file-embed
-                 , HUnit
                  , filepath
 
 source-repository head

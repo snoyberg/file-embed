@@ -33,21 +33,13 @@ install:
  - echo "$(ghc --version) [$(ghc --print-project-git-commit-id 2> /dev/null || echo '?')]"
  - travis_retry cabal update
  - sed -i 's/^jobs:/-- jobs:/' ${HOME}/.cabal/config
- - if [ $GHCVER = "6.12.3" ]; then
-   cabal install --only-dependencies;
-   else
-   cabal install --only-dependencies --enable-tests --enable-benchmarks;
-   fi
+ - cabal install --only-dependencies --enable-tests --enable-benchmarks;
 
 script:
  - if [ -f configure.ac ]; then autoreconf -i; fi
- - if [ $GHCVER = "6.12.3" ]; then
-   cabal configure -v2;
-   else
-   cabal configure --enable-tests --enable-benchmarks -v2;
-   fi
+ - cabal configure --enable-tests --enable-benchmarks -v2;
  - cabal build # this builds all libraries and executables (including tests/benchmarks)
- - if [ $GHCVER != "6.12.3" ]; then cabal test; fi
+ - cabal test
  - cabal check
  - cabal sdist   # tests that a source-distribution can be generated
 
