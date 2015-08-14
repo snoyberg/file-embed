@@ -1,3 +1,7 @@
+## 0.0.9
+
+* embedStringFile [#14](https://github.com/snoyberg/file-embed/pull/14)
+
 ## 0.0.8.2
 
 * Improve inject documentation [#11](https://github.com/snoyberg/file-embed/issues/11)

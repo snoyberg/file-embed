@@ -156,6 +156,8 @@ stringToBs = B8.pack
 -- >
 -- > myFile :: IsString a => a
 -- > myFile = $(embedStringFile "dirName/fileName")
+--
+-- Since 0.0.9
 embedStringFile :: FilePath -> Q Exp
 embedStringFile fp =
 #if MIN_VERSION_template_haskell(2,7,0)
@@ -165,6 +167,8 @@ embedStringFile fp =
 
 -- | Embed a single existing string file in your source code
 -- out of list a list of paths supplied.
+--
+-- Since 0.0.9
 embedOneStringFileOf :: [FilePath] -> Q Exp
 embedOneStringFileOf ps =
   (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
