@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | This module uses template Haskell. Following is a simplified explanation of usage for those unfamiliar with calling Template Haskell functions.
 --
--- The function @embedFile@ in this modules embeds a file into the exceutable
+-- The function @embedFile@ in this modules embeds a file into the executable
 -- that you can use it at runtime. A file is represented as a @ByteString@.
 -- However, as you can see below, the type signature indicates a value of type
 -- @Q Exp@ will be returned. In order to convert this into a @ByteString@, you
