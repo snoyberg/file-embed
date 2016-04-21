@@ -35,6 +35,8 @@ module Data.FileEmbed
     , injectFile
     , injectWith
     , injectFileWith
+      -- * Relative path manipulation
+    , makeRelativeToProject
       -- * Internal
     , stringToBs
     , bsToExp
@@ -50,12 +52,13 @@ import Language.Haskell.TH.Syntax
 #endif
     , Q
     , runIO
+    , qLocation, loc_filename
 #if MIN_VERSION_template_haskell(2,7,0)
     , Quasi(qAddDependentFile)
 #endif
     )
 import System.Directory (doesDirectoryExist, doesFileExist,
-                         getDirectoryContents)
+                         getDirectoryContents, canonicalizePath)
 import Control.Exception (throw, ErrorCall(..))
 import Control.Monad (filterM)
 import qualified Data.ByteString as B
@@ -64,7 +67,7 @@ import Control.Arrow ((&&&), second)
 import Control.Applicative ((<$>))
 import Data.ByteString.Unsafe (unsafePackAddressLen)
 import System.IO.Unsafe (unsafePerformIO)
-import System.FilePath ((</>))
+import System.FilePath ((</>), takeDirectory, takeExtension)
 import Data.String (fromString)
 import Prelude as P
 
@@ -336,3 +339,42 @@ the magic key. If you know for certain that there will only be one dummy space
 available, you can use the non-@With@ variants.
 
 -}
+
+-- | Take a relative file path and attach it to the root of the current
+-- project.
+--
+-- The idea here is that, when building with Stack, the build will always be
+-- executed with a current working directory of the root of the project (where
+-- your .cabal file is located). However, if you load up multiple projects with
+-- @stack ghci@, the working directory may be something else entirely.
+--
+-- This function looks at the source location of the Haskell file calling it,
+-- finds the first parent directory with a .cabal file, and uses that as the
+-- root directory for fixing the relative path.
+--
+-- @@@
+-- $(makeRelativeToProject "data/foo.txt" >>= fileEmbed)
+-- @@@
+--
+-- @since 0.0.10
+makeRelativeToProject :: FilePath -> Q FilePath
+makeRelativeToProject rel = do
+    loc <- qLocation
+    runIO $ do
+        srcFP <- canonicalizePath $ loc_filename loc
+        mdir <- findProjectDir srcFP
+        case mdir of
+            Nothing -> error $ "Could not find .cabal file for path: " ++ srcFP
+            Just dir -> return $ dir </> rel
+  where
+    findProjectDir x = do
+        let dir = takeDirectory x
+        if dir == x
+            then return Nothing
+            else do
+                contents <- getDirectoryContents dir
+                if any isCabalFile contents
+                    then return (Just dir)
+                    else findProjectDir dir
+
+    isCabalFile fp = takeExtension fp == ".cabal"

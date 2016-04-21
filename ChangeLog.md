@@ -1,3 +1,7 @@
+## 0.0.10
+
+* `makeRelativeToProject`
+
 ## 0.0.9
 
 * embedStringFile [#14](https://github.com/snoyberg/file-embed/pull/14)
