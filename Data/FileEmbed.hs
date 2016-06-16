@@ -353,7 +353,7 @@ available, you can use the non-@With@ variants.
 -- root directory for fixing the relative path.
 --
 -- @@@
--- $(makeRelativeToProject "data/foo.txt" >>= fileEmbed)
+-- $(makeRelativeToProject "data/foo.txt" >>= embedFile)
 -- @@@
 --
 -- @since 0.0.10
