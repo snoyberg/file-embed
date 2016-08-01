@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 -- | This module uses template Haskell. Following is a simplified explanation of usage for those unfamiliar with calling Template Haskell functions.
 --
 -- The function @embedFile@ in this modules embeds a file into the executable
@@ -52,6 +53,7 @@ import Language.Haskell.TH.Syntax
 #else
     , Lit (StringL, IntegerL)
 #endif
+    , Type
     , Q
     , runIO
     , qLocation, loc_filename
@@ -73,66 +75,11 @@ import System.FilePath ((</>), takeDirectory, takeExtension)
 import Data.String (IsString, fromString)
 import Prelude as P
 
--- | Embed a single file in your source code.
---
--- > import qualified Data.ByteString
--- >
--- > myFile :: Data.ByteString.ByteString
--- > myFile = $(embedFile "dirName/fileName")
-embedFile :: FilePath -> Q Exp
-embedFile fp =
-#if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile fp >>
-#endif
-  (runIO $ B.readFile fp) >>= bsToExp
+type EmbedOps a = (FilePath -> IO a, a -> Q Exp, Q Type)
 
--- | Embed a single existing file in your source code
--- out of list a list of paths supplied.
---
--- > import qualified Data.ByteString
--- >
--- > myFile :: Data.ByteString.ByteString
--- > myFile = $(embedFile' [ "dirName/fileName", "src/dirName/fileName" ])
-embedOneFileOf :: [FilePath] -> Q Exp
-embedOneFileOf ps =
-  (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
-#if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile path
-#endif
-    bsToExp content
-  where
-    readExistingFile :: [FilePath] -> IO ( FilePath, B.ByteString )
-    readExistingFile xs = do
-      ys <- filterM doesFileExist xs
-      case ys of
-        (p:_) -> B.readFile p >>= \ c -> return ( p, c )
-        _ -> throw $ ErrorCall "Cannot find file to embed as resource"
-
--- | Embed a directory recursively in your source code.
---
--- > import qualified Data.ByteString
--- >
--- > myDir :: [(FilePath, Data.ByteString.ByteString)]
--- > myDir = $(embedDir "dirName")
-embedDir :: FilePath -> Q Exp
-embedDir fp = do
-    typ <- [t| [(FilePath, B.ByteString)] |]
-    e <- ListE <$> ((runIO $ fileList fp) >>= mapM (pairToExp fp))
-    return $ SigE e typ
-
--- | Get a directory tree in the IO monad.
---
--- This is the workhorse of 'embedDir'
-getDir :: FilePath -> IO [(FilePath, B.ByteString)]
-getDir = fileList
-
-pairToExp :: FilePath -> (FilePath, B.ByteString) -> Q Exp
-pairToExp _root (path, bs) = do
-#if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile $ _root ++ '/' : path
-#endif
-    exp' <- bsToExp bs
-    return $! TupE [LitE $ StringL path, exp']
+-- ByteString-specific functions:
+bsOps :: EmbedOps B.ByteString
+bsOps = (B.readFile, bsToExp, [t| [(FilePath, B.ByteString)] |])
 
 bsToExp :: B.ByteString -> Q Exp
 #if MIN_VERSION_template_haskell(2, 5, 0)
@@ -157,57 +104,42 @@ stringToBs = B8.pack
 
 -- | Embed a single file in your source code.
 --
--- > import Data.String
+-- > import qualified Data.ByteString
 -- >
--- > myFile :: IsString a => a
--- > myFile = $(embedStringFile "dirName/fileName")
---
--- Since 0.0.9
-embedStringFile :: FilePath -> Q Exp
-embedStringFile fp =
-#if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile fp >>
-#endif
-  (runIO $ P.readFile fp) >>= strToExp
+-- > myFile :: Data.ByteString.ByteString
+-- > myFile = $(embedFile "dirName/fileName")
+embedFile :: FilePath -> Q Exp
+embedFile = embedFile' bsOps
 
--- | Embed a single existing string file in your source code
+-- | Embed a single existing file in your source code
 -- out of list a list of paths supplied.
 --
--- Since 0.0.9
-embedOneStringFileOf :: [FilePath] -> Q Exp
-embedOneStringFileOf ps =
-  (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
-#if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile path
-#endif
-    strToExp content
-  where
-    readExistingFile :: [FilePath] -> IO ( FilePath, String )
-    readExistingFile xs = do
-      ys <- filterM doesFileExist xs
-      case ys of
-        (p:_) -> P.readFile p >>= \ c -> return ( p, c )
-        _ -> throw $ ErrorCall "Cannot find file to embed as resource"
+-- > import qualified Data.ByteString
+-- >
+-- > myFile :: Data.ByteString.ByteString
+-- > myFile = $(embedFile' [ "dirName/fileName", "src/dirName/fileName" ])
+embedOneFileOf :: [FilePath] -> Q Exp
+embedOneFileOf = embedOneFileOf' bsOps
 
 -- | Embed a directory recursively in your source code.
 --
--- > import Data.String
+-- > import qualified Data.ByteString
 -- >
--- > myDir :: IsString a => [(FilePath, a)]
--- > myDir = $(embedStringDir "dirName")
-embedStringDir :: FilePath -> Q Exp
-embedStringDir fp = do
-    typ <- [t| forall a. IsString a => [(FilePath, a)] |]
-    e <- ListE <$> ((runIO $ strFileList fp) >>= mapM (strPairToExp fp))
-    return $ SigE e typ
+-- > myDir :: [(FilePath, Data.ByteString.ByteString)]
+-- > myDir = $(embedDir "dirName")
+embedDir :: FilePath -> Q Exp
+embedDir = embedDir' bsOps
 
-strPairToExp :: FilePath -> (FilePath, String) -> Q Exp
-strPairToExp _root (path, bs) = do
-#if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile $ _root ++ '/' : path
-#endif
-    exp' <- strToExp bs
-    return $! TupE [LitE $ StringL path, exp']
+-- | Get a directory tree in the IO monad.
+--
+-- This is the workhorse of 'embedDir'
+getDir :: FilePath -> IO [(FilePath, B.ByteString)]
+getDir top = fileList' bsOps top ""
+
+
+-- Generic `IsString a`-producing functions:
+strOps :: EmbedOps String 
+strOps = (readFile, strToExp, [t| forall a. IsString a => [(FilePath, a)] |])
 
 strToExp :: String -> Q Exp
 #if MIN_VERSION_template_haskell(2, 5, 0)
@@ -220,29 +152,92 @@ strToExp s = do
     return $! AppE helper $! LitE $! StringL s
 #endif
 
-notHidden :: FilePath -> Bool
-notHidden ('.':_) = False
-notHidden _ = True
+-- | Embed a single file in your source code.
+--
+-- > import Data.String
+-- >
+-- > myFile :: IsString a => a
+-- > myFile = $(embedStringFile "dirName/fileName")
+--
+-- Since 0.0.9
+embedStringFile :: FilePath -> Q Exp
+embedStringFile = embedFile' strOps
 
-fileList :: FilePath -> IO [(FilePath, B.ByteString)]
-fileList top = fileList' B.readFile top ""
+-- | Embed a single existing string file in your source code
+-- out of list a list of paths supplied.
+--
+-- Since 0.0.9
+embedOneStringFileOf :: [FilePath] -> Q Exp
+embedOneStringFileOf = embedOneFileOf' strOps
 
-strFileList :: FilePath -> IO [(FilePath, String)]
-strFileList top = fileList' readFile top ""
+-- | Embed a directory recursively in your source code.
+--
+-- > import Data.String
+-- >
+-- > myDir :: IsString a => [(FilePath, a)]
+-- > myDir = $(embedStringDir "dirName")
+embedStringDir :: FilePath -> Q Exp
+embedStringDir = embedDir' strOps
 
-fileList' :: (FilePath -> IO a) -> FilePath -> FilePath -> IO [(FilePath, a)]
-fileList' readFile_ realTop top = do
+
+-- Generic functions:
+embedFile' :: IsString a => EmbedOps a -> FilePath -> Q Exp
+embedFile' (readFile', toExp, _) fp =
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile fp >>
+#endif
+  (runIO $ readFile' fp) >>= toExp
+
+embedOneFileOf' :: forall a. IsString a => EmbedOps a -> [FilePath] -> Q Exp
+embedOneFileOf' (readFile', toExp, _) ps =
+  (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile path
+#endif
+    toExp content
+  where
+    readExistingFile :: [FilePath] -> IO ( FilePath, a )
+    readExistingFile xs = do
+      ys <- filterM doesFileExist xs
+      case ys of
+        (p:_) -> readFile' p >>= \ c -> return ( p, c )
+        _ -> throw $ ErrorCall "Cannot find file to embed as resource"
+
+embedDir' :: IsString a => EmbedOps a -> FilePath -> Q Exp
+embedDir' ops@(_, _, typq) fp = do
+    typ <- typq
+    e <- ListE <$> ((runIO $ getDir') >>= mapM (pairToExp' ops fp))
+    return $ SigE e typ
+    where 
+        getDir' = fileList' ops fp ""
+
+        pairToExp' :: IsString a => EmbedOps a -> FilePath -> (FilePath, a) -> Q Exp
+        pairToExp' (_, toExp, _) _root (path, bs) = do
+        #if MIN_VERSION_template_haskell(2,7,0)
+            qAddDependentFile $ _root ++ '/' : path
+        #endif
+            exp' <- toExp bs
+            return $! TupE [LitE $ StringL path, exp']
+
+fileList' :: IsString a => EmbedOps a -> FilePath -> FilePath -> IO [(FilePath, a)]
+fileList' ops@(readFile', _, _) realTop top = do
     allContents <- filter notHidden <$> getDirectoryContents (realTop </> top)
     let all' = map ((top </>) &&& (\x -> realTop </> top </> x)) allContents
     files <- filterM (doesFileExist . snd) all' >>=
-             mapM (liftPair2 . second readFile_)
+             mapM (liftPair2 . second readFile')
     dirs <- filterM (doesDirectoryExist . snd) all' >>=
-            mapM (fileList' readFile_ realTop . fst)
+            mapM (fileList' ops realTop . fst)
     return $ concat $ files : dirs
+    where
+        notHidden :: FilePath -> Bool
+        notHidden ('.':_) = False
+        notHidden _ = True
 
-liftPair2 :: Monad m => (a, m b) -> m (a, b)
-liftPair2 (a, b) = b >>= \b' -> return (a, b')
+        liftPair2 :: Monad m => (a, m b) -> m (a, b)
+        liftPair2 (a, b) = b >>= \b' -> return (a, b')
 
+
+-- The inject system:
 magic :: B.ByteString -> B.ByteString
 magic x = B8.concat ["fe", x]
 

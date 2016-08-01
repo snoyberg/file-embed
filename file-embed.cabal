@@ -31,8 +31,11 @@ test-suite test
     main-is: main.hs
     hs-source-dirs: test
     build-depends: base
+                 , bytestring
+                 , directory
                  , file-embed
                  , filepath
+                 , hspec                >= 2.1
 
 source-repository head
   type:     git
