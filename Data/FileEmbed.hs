@@ -23,41 +23,30 @@ module Data.FileEmbed
       embedFile
     , embedOneFileOf
     , embedDir
-    , getDir
       -- * Embed as a IsString
     , embedStringFile
     , embedOneStringFileOf
     , embedStringDir
       -- * Inject into an executable
       -- $inject
-#if MIN_VERSION_template_haskell(2,5,0)
     , dummySpace
     , dummySpaceWith
-#endif
     , inject
     , injectFile
     , injectWith
     , injectFileWith
       -- * Relative path manipulation
     , makeRelativeToProject
-      -- * Internal
-    , stringToBs
-    , bsToExp
-    , strToExp
     ) where
 
 import Language.Haskell.TH.Syntax
     ( Exp (AppE, ListE, LitE, TupE, SigE, VarE)
-#if MIN_VERSION_template_haskell(2,5,0)
     , Lit (StringL, StringPrimL, IntegerL)
-#else
-    , Lit (StringL, IntegerL)
-#endif
     , Type
     , Q
     , runIO
     , qLocation, loc_filename
-#if MIN_VERSION_template_haskell(2,7,0)
+#if MIN_VERSION_template_haskell(2, 7, 0)
     , Quasi(qAddDependentFile)
 #endif
     )
@@ -82,7 +71,6 @@ bsOps :: EmbedOps B.ByteString
 bsOps = (B.readFile, bsToExp, [t| [(FilePath, B.ByteString)] |])
 
 bsToExp :: B.ByteString -> Q Exp
-#if MIN_VERSION_template_haskell(2, 5, 0)
 bsToExp bs =
     return $ VarE 'unsafePerformIO
       `AppE` (VarE 'unsafePackAddressLen
@@ -92,15 +80,6 @@ bsToExp bs =
 #else
       `AppE` LitE (StringPrimL $ B8.unpack bs))
 #endif
-#else
-bsToExp bs = do
-    helper <- [| stringToBs |]
-    let chars = B8.unpack bs
-    return $! AppE helper $! LitE $! StringL chars
-#endif
-
-stringToBs :: String -> B.ByteString
-stringToBs = B8.pack
 
 -- | Embed a single file in your source code.
 --
@@ -130,27 +109,15 @@ embedOneFileOf = embedOneFileOf' bsOps
 embedDir :: FilePath -> Q Exp
 embedDir = embedDir' bsOps
 
--- | Get a directory tree in the IO monad.
---
--- This is the workhorse of 'embedDir'
-getDir :: FilePath -> IO [(FilePath, B.ByteString)]
-getDir top = fileList' bsOps top ""
-
 
 -- Generic `IsString a`-producing functions:
 strOps :: EmbedOps String 
 strOps = (readFile, strToExp, [t| forall a. IsString a => [(FilePath, a)] |])
 
 strToExp :: String -> Q Exp
-#if MIN_VERSION_template_haskell(2, 5, 0)
 strToExp s =
     return $ VarE 'fromString
       `AppE` LitE (StringL s)
-#else
-strToExp s = do
-    helper <- [| fromString |]
-    return $! AppE helper $! LitE $! StringL s
-#endif
 
 -- | Embed a single file in your source code.
 --
@@ -183,7 +150,7 @@ embedStringDir = embedDir' strOps
 -- Generic functions:
 embedFile' :: IsString a => EmbedOps a -> FilePath -> Q Exp
 embedFile' (readFile', toExp, _) fp =
-#if MIN_VERSION_template_haskell(2,7,0)
+#if MIN_VERSION_template_haskell(2, 7, 0)
     qAddDependentFile fp >>
 #endif
   (runIO $ readFile' fp) >>= toExp
@@ -191,7 +158,7 @@ embedFile' (readFile', toExp, _) fp =
 embedOneFileOf' :: forall a. IsString a => EmbedOps a -> [FilePath] -> Q Exp
 embedOneFileOf' (readFile', toExp, _) ps =
   (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
-#if MIN_VERSION_template_haskell(2,7,0)
+#if MIN_VERSION_template_haskell(2, 7, 0)
     qAddDependentFile path
 #endif
     toExp content
@@ -213,7 +180,7 @@ embedDir' ops@(_, _, typq) fp = do
 
         pairToExp' :: IsString a => EmbedOps a -> FilePath -> (FilePath, a) -> Q Exp
         pairToExp' (_, toExp, _) _root (path, bs) = do
-        #if MIN_VERSION_template_haskell(2,7,0)
+        #if MIN_VERSION_template_haskell(2, 7, 0)
             qAddDependentFile $ _root ++ '/' : path
         #endif
             exp' <- toExp bs
@@ -256,7 +223,6 @@ padSize i =
     let s = show i
      in replicate (sizeLen - length s) '0' ++ s
 
-#if MIN_VERSION_template_haskell(2,5,0)
 -- | Allocate the given number of bytes in the generate executable. That space
 -- can be filled up with the 'inject' and 'injectFile' functions.
 dummySpace :: Int -> Q Exp
@@ -276,12 +242,11 @@ dummySpaceWith postfix space = do
         magicLen = B8.length magic'
         len = magicLen + sizeLen + space
         chars = LitE $ StringPrimL $
-#if MIN_VERSION_template_haskell(2,6,0)
+#if MIN_VERSION_template_haskell(2, 6, 0)
             map (toEnum . fromEnum) $
 #endif
             start ++ replicate space '0'
     [| getInner (B.drop magicLen (unsafePerformIO (unsafePackAddressLen len $(return chars)))) |]
-#endif
 
 -- | Inject some raw data inside a @ByteString@ containing empty, dummy space
 -- (allocated with @dummySpace@). Typically, the original @ByteString@ is an

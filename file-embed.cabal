@@ -21,7 +21,7 @@ library
     build-depends:   base               >= 4       && < 5
                    , bytestring         >= 0.9.1.4
                    , directory          >= 1.0.0.3
-                   , template-haskell
+                   , template-haskell   >= 2.5.0.0
                    , filepath
     exposed-modules: Data.FileEmbed
     ghc-options:     -Wall
