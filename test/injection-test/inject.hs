@@ -1,4 +1,4 @@
 {-# LANGUAGE OverloadedStrings #-}
-import Data.FileEmbed
+import Data.FileEmbed.Inject
 
 main = injectFile "Hello World" "template" "injected"

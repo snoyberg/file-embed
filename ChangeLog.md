@@ -1,3 +1,10 @@
+## 0.1.0
+
+* Injection has been moved to a submodule, "Data.FileEmbed.Inject".
+* The ByteString-centric API has been shifted over to one that can produce any member of the IsString typeclass.
+    * Correspondingly, the `embedString*` API has been removed, as it is now redundant.
+*  Several generally-unused internal functions are no longer exported.
+
 ## 0.0.10
 
 * `makeRelativeToProject`
