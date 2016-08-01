@@ -1,6 +1,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 -- | This module uses template Haskell. Following is a simplified explanation of usage for those unfamiliar with calling Template Haskell functions.
 --
 -- The function @embedFile@ in this modules embeds a file into the executable
@@ -25,6 +26,7 @@ module Data.FileEmbed
       -- * Embed as a IsString
     , embedStringFile
     , embedOneStringFileOf
+    , embedStringDir
       -- * Inject into an executable
       -- $inject
 #if MIN_VERSION_template_haskell(2,5,0)
@@ -68,7 +70,7 @@ import Control.Applicative ((<$>))
 import Data.ByteString.Unsafe (unsafePackAddressLen)
 import System.IO.Unsafe (unsafePerformIO)
 import System.FilePath ((</>), takeDirectory, takeExtension)
-import Data.String (fromString)
+import Data.String (IsString, fromString)
 import Prelude as P
 
 -- | Embed a single file in your source code.
@@ -187,6 +189,26 @@ embedOneStringFileOf ps =
         (p:_) -> P.readFile p >>= \ c -> return ( p, c )
         _ -> throw $ ErrorCall "Cannot find file to embed as resource"
 
+-- | Embed a directory recursively in your source code.
+--
+-- > import Data.String
+-- >
+-- > myDir :: IsString a => [(FilePath, a)]
+-- > myDir = $(embedStringDir "dirName")
+embedStringDir :: FilePath -> Q Exp
+embedStringDir fp = do
+    typ <- [t| forall a. IsString a => [(FilePath, a)] |]
+    e <- ListE <$> ((runIO $ strFileList fp) >>= mapM (strPairToExp fp))
+    return $ SigE e typ
+
+strPairToExp :: FilePath -> (FilePath, String) -> Q Exp
+strPairToExp _root (path, bs) = do
+#if MIN_VERSION_template_haskell(2,7,0)
+    qAddDependentFile $ _root ++ '/' : path
+#endif
+    exp' <- strToExp bs
+    return $! TupE [LitE $ StringL path, exp']
+
 strToExp :: String -> Q Exp
 #if MIN_VERSION_template_haskell(2, 5, 0)
 strToExp s =
@@ -203,16 +225,19 @@ notHidden ('.':_) = False
 notHidden _ = True
 
 fileList :: FilePath -> IO [(FilePath, B.ByteString)]
-fileList top = fileList' top ""
+fileList top = fileList' B.readFile top ""
 
-fileList' :: FilePath -> FilePath -> IO [(FilePath, B.ByteString)]
-fileList' realTop top = do
+strFileList :: FilePath -> IO [(FilePath, String)]
+strFileList top = fileList' readFile top ""
+
+fileList' :: (FilePath -> IO a) -> FilePath -> FilePath -> IO [(FilePath, a)]
+fileList' readFile_ realTop top = do
     allContents <- filter notHidden <$> getDirectoryContents (realTop </> top)
     let all' = map ((top </>) &&& (\x -> realTop </> top </> x)) allContents
     files <- filterM (doesFileExist . snd) all' >>=
-             mapM (liftPair2 . second B.readFile)
+             mapM (liftPair2 . second readFile_)
     dirs <- filterM (doesDirectoryExist . snd) all' >>=
-            mapM (fileList' realTop . fst)
+            mapM (fileList' readFile_ realTop . fst)
     return $ concat $ files : dirs
 
 liftPair2 :: Monad m => (a, m b) -> m (a, b)
