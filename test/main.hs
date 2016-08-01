@@ -1,11 +1,18 @@
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
+
+module Main (main) where
 
 import Test.Hspec
 
+#ifdef TEST_INJECTION
+import Shelly (shelly, silently, run, run_, findWhen, hasExt, toTextIgnore, pwd, chdir, get_env_text, setenv, appendToPath) 
+#endif 
+
 import Control.Applicative ((<$>))
-import Control.Arrow
-import Control.Monad
+import Control.Arrow ((&&&), second)
+import Control.Monad (filterM, mapM)
 import Data.FileEmbed
 import qualified Data.ByteString as B
 import System.Directory (doesDirectoryExist, doesFileExist, getDirectoryContents)
@@ -44,3 +51,19 @@ main = hspec . describe "Data.FileEmbed" $ do
         let sampleDir = $(embedDir "test/sample") :: [(FilePath, B.ByteString)]
         correct <- runIO $ Main.getDir "test/sample"
         it "handles text and binary files" $ sampleDir `shouldBe` correct
+#ifdef TEST_INJECTION
+    describe "Data.FileEmbed.Inject" $ do
+        it "correctly injects data into a binary" $ (shelly . chdir "test/injection-test" $ do
+            path <- get_env_text "PATH"
+            appendToPath =<< pwd
+            -- Build template and run injector
+            silently $ run_ "stack" ["ghc", "--", "template.hs"]
+            run_ "stack" ["runghc", "--", "inject.hs"]
+            -- Set injected file as executable and run it
+            run_ "chmod" ["+x", "injected"]
+            out <- silently $ run "injected" []
+            -- Clean up
+            run "rm" =<< (map toTextIgnore) <$> findWhen (return . not . hasExt "hs") "."
+            setenv "PATH" path
+            return out) `shouldReturn` "\"Hello World\"\n"
+#endif
