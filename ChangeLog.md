@@ -1,3 +1,7 @@
+## 0.0.10.1
+
+* Minor doc improvements
+
 ## 0.0.10
 
 * `makeRelativeToProject`
