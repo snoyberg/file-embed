@@ -90,7 +90,7 @@ embedFile fp =
 -- > import qualified Data.ByteString
 -- >
 -- > myFile :: Data.ByteString.ByteString
--- > myFile = $(embedFile' [ "dirName/fileName", "src/dirName/fileName" ])
+-- > myFile = $(embedOneFileOf [ "dirName/fileName", "src/dirName/fileName" ])
 embedOneFileOf :: [FilePath] -> Q Exp
 embedOneFileOf ps =
   (runIO $ readExistingFile ps) >>= \ ( path, content ) -> do
