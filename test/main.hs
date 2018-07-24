@@ -18,4 +18,4 @@ main = do
         , ("bar" </> "baz", "baz\r\n")
         ]
     let str = $(embedStringFile "test/sample/foo") :: String
-    str @?= "foo\r\n"
+    filter (/= '\r') str @?= "foo\n"
