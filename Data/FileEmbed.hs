@@ -123,6 +123,8 @@ embedDir fp = do
 --
 -- > myFiles :: [FilePath]
 -- > myFiles = $(embedDirListing "dirName")
+--
+-- @since 0.0.11
 embedDirListing :: FilePath -> Q Exp
 embedDirListing fp = do
     typ <- [t| [FilePath] |]
