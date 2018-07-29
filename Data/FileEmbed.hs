@@ -21,6 +21,7 @@ module Data.FileEmbed
       embedFile
     , embedOneFileOf
     , embedDir
+    , embedDirListing
     , getDir
       -- * Embed as a IsString
     , embedStringFile
@@ -116,6 +117,18 @@ embedDir :: FilePath -> Q Exp
 embedDir fp = do
     typ <- [t| [(FilePath, B.ByteString)] |]
     e <- ListE <$> ((runIO $ fileList fp) >>= mapM (pairToExp fp))
+    return $ SigE e typ
+
+-- | Embed a directory listing recursively in your source code.
+--
+-- > myFiles :: [FilePath]
+-- > myFiles = $(embedDirListing "dirName")
+--
+-- @since 0.0.11
+embedDirListing :: FilePath -> Q Exp
+embedDirListing fp = do
+    typ <- [t| [FilePath] |]
+    e <- ListE <$> ((runIO $ fmap fst <$> fileList fp) >>= mapM strToExp)
     return $ SigE e typ
 
 -- | Get a directory tree in the IO monad.

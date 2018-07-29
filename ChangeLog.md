@@ -1,3 +1,7 @@
+## 0.0.11
+
+* embedDirListing [#26](https://github.com/snoyberg/file-embed/pull/26)
+
 ## 0.0.10.1
 
 * Minor doc improvements
