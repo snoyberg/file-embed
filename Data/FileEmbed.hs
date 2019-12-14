@@ -143,7 +143,11 @@ pairToExp _root (path, bs) = do
     qAddDependentFile $ _root ++ '/' : path
 #endif
     exp' <- bsToExp bs
-    return $! TupE [LitE $ StringL path, exp']
+    return $! TupE
+#if MIN_VERSION_template_haskell(2,16,0)
+      $ map Just
+#endif
+      [LitE $ StringL path, exp']
 
 bsToExp :: B.ByteString -> Q Exp
 #if MIN_VERSION_template_haskell(2, 5, 0)
