@@ -18,7 +18,7 @@ extra-source-files: test/main.hs, test/sample/foo, test/sample/bar/baz,
                     README.md
 
 library
-    build-depends:   base               >= 4       && < 5
+    build-depends:   base               >= 4.9.1   && < 5
                    , bytestring         >= 0.9.1.4
                    , directory          >= 1.0.0.3
                    , template-haskell
