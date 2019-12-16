@@ -1,3 +1,9 @@
+# ChangeLog for file-embed
+
+## 0.0.11.1
+
+* Support GHC 8.10
+
 ## 0.0.11
 
 * embedDirListing [#26](https://github.com/snoyberg/file-embed/pull/26)
