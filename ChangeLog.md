@@ -1,5 +1,9 @@
 # ChangeLog for file-embed
 
+## 0.0.11.2
+
+* Haddock markup fix
+
 ## 0.0.11.1
 
 * Support GHC 8.10
