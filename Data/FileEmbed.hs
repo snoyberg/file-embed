@@ -369,9 +369,7 @@ available, you can use the non-@With@ variants.
 -- finds the first parent directory with a .cabal file, and uses that as the
 -- root directory for fixing the relative path.
 --
--- @@@
--- $(makeRelativeToProject "data/foo.txt" >>= embedFile)
--- @@@
+-- @$(makeRelativeToProject "data/foo.txt" >>= embedFile)@
 --
 -- @since 0.0.10
 makeRelativeToProject :: FilePath -> Q FilePath
