@@ -68,9 +68,13 @@ import Control.Arrow ((&&&), second)
 import Control.Applicative ((<$>))
 import Data.ByteString.Unsafe (unsafePackAddressLen)
 import System.IO.Unsafe (unsafePerformIO)
-import System.FilePath ((</>), takeDirectory, takeExtension)
+import System.FilePath (takeDirectory, takeExtension)
 import Data.String (fromString)
 import Prelude as P
+-- Using / instead of \ on windows is less surprising
+-- and avoids file not found errors in qAddDependentFile
+-- when cross compiling for windows
+import System.FilePath.Posix ((</>))
 
 -- | Embed a single file in your source code.
 --
@@ -140,7 +144,7 @@ getDir = fileList
 pairToExp :: FilePath -> (FilePath, B.ByteString) -> Q Exp
 pairToExp _root (path, bs) = do
 #if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile $ _root ++ '/' : path
+    qAddDependentFile $ _root </> path
 #endif
     exp' <- bsToExp bs
     return $! TupE
