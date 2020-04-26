@@ -71,6 +71,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.FilePath ((</>), takeDirectory, takeExtension)
 import Data.String (fromString)
 import Prelude as P
+import System.FilePath (splitDirectories)
+import qualified System.FilePath.Posix as Posix
 
 -- | Embed a single file in your source code.
 --
@@ -140,7 +142,11 @@ getDir = fileList
 pairToExp :: FilePath -> (FilePath, B.ByteString) -> Q Exp
 pairToExp _root (path, bs) = do
 #if MIN_VERSION_template_haskell(2,7,0)
-    qAddDependentFile $ _root ++ '/' : path
+    -- Cross compiling for windows on linux requires the input
+    -- to `qAddDependentFile` to be a posix path (native
+    -- windows compilers are happy with both)
+    qAddDependentFile $ _root ++ '/' :
+        Posix.joinPath (splitDirectories path)
 #endif
     exp' <- bsToExp bs
     return $! TupE
