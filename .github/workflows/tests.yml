@@ -13,9 +13,6 @@ jobs:
         resolver: [nightly, lts-15, lts-14, lts-12, lts-11, lts-9]
 
     steps:
-      - name: Setup Stack
-        uses: mstksg/setup-stack@v1
-
       - name: Clone project
         uses: actions/checkout@v2
 
@@ -28,6 +25,8 @@ jobs:
             ${{ runner.os }}-${{ matrix.resolver }}-
 
       - name: Build and run tests
+        shell: bash
         run: |
             set -ex
+            curl -sSL https://get.haskellstack.org/ | sh -s - -f
             stack test --fast --no-terminal --resolver=${{ matrix.resolver }}
