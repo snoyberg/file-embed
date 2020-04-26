@@ -15,6 +15,7 @@ main = do
     received @?=
         [ ("foo", "foo\r\n")
         , ("bar/baz", "baz\r\n")
+        , ("bar/bar/black", "sheep\n")
         ]
     let str = $(embedStringFile "test/sample/foo") :: String
     filter (/= '\r') str @?= "foo\n"
