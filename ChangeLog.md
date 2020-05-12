@@ -1,5 +1,9 @@
 # ChangeLog for file-embed
 
+## 0.0.12.0
+
+* Use the `Bytes` literal on newer GHCs to reduce memory usage during compilation [#36](https://github.com/snoyberg/file-embed/pull/36)
+
 ## 0.0.11.2
 
 * Haddock markup fix
