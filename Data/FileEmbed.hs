@@ -46,11 +46,7 @@ module Data.FileEmbed
 
 import Language.Haskell.TH.Syntax
     ( Exp (AppE, ListE, LitE, TupE, SigE, VarE)
-#if MIN_VERSION_template_haskell(2,5,0)
-    , Lit (StringL, StringPrimL, IntegerL)
-#else
-    , Lit (StringL, IntegerL)
-#endif
+    , Lit (..)
     , Q
     , runIO
     , qLocation, loc_filename
@@ -58,6 +54,10 @@ import Language.Haskell.TH.Syntax
     , Quasi(qAddDependentFile)
 #endif
     )
+#if MIN_VERSION_template_haskell(2,16,0)
+import Language.Haskell.TH ( mkBytes, bytesPrimL )
+import qualified Data.ByteString.Internal as B
+#endif
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents, canonicalizePath)
 import Control.Exception (throw, ErrorCall(..))
@@ -155,7 +155,11 @@ bsToExp bs =
     return $ VarE 'unsafePerformIO
       `AppE` (VarE 'unsafePackAddressLen
       `AppE` LitE (IntegerL $ fromIntegral $ B8.length bs)
-#if MIN_VERSION_template_haskell(2, 8, 0)
+#if MIN_VERSION_template_haskell(2, 16, 0)
+      `AppE` LitE (bytesPrimL (
+                let B.PS ptr off sz = bs
+                in  mkBytes ptr (fromIntegral off) (fromIntegral sz))))
+#elif MIN_VERSION_template_haskell(2, 8, 0)
       `AppE` LitE (StringPrimL $ B.unpack bs))
 #else
       `AppE` LitE (StringPrimL $ B8.unpack bs))
