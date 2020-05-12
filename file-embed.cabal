@@ -18,6 +18,7 @@ extra-source-files: test/main.hs, test/sample/foo, test/sample/bar/baz,
                     README.md
 
 library
+    default-language: Haskell2010
     build-depends:   base               >= 4.9.1   && < 5
                    , bytestring         >= 0.9.1.4
                    , directory          >= 1.0.0.3
@@ -27,6 +28,7 @@ library
     ghc-options:     -Wall
 
 test-suite test
+    default-language: Haskell2010
     type: exitcode-stdio-1.0
     main-is: main.hs
     hs-source-dirs: test
