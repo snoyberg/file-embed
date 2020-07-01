@@ -1,5 +1,9 @@
 # ChangeLog for file-embed
 
+## 0.0.13.0
+
+* Ensure that directory listings are returned in sorted order for reproducibility [yesodweb/yesod#1684](https://github.com/yesodweb/yesod/issues/1684)
+
 ## 0.0.12.0
 
 * Use the `Bytes` literal on newer GHCs to reduce memory usage during compilation [#36](https://github.com/snoyberg/file-embed/pull/36)

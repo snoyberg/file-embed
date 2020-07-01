@@ -71,6 +71,8 @@ import System.IO.Unsafe (unsafePerformIO)
 import System.FilePath ((</>), takeDirectory, takeExtension)
 import Data.String (fromString)
 import Prelude as P
+import Data.List (sortBy)
+import Data.Ord (comparing)
 
 -- | Embed a single file in your source code.
 --
@@ -234,7 +236,7 @@ fileList' realTop top = do
              mapM (liftPair2 . second B.readFile)
     dirs <- filterM (doesDirectoryExist . snd) all' >>=
             mapM (fileList' realTop . fst)
-    return $ concat $ files : dirs
+    return $ sortBy (comparing fst) $ concat $ files : dirs
 
 liftPair2 :: Monad m => (a, m b) -> m (a, b)
 liftPair2 (a, b) = b >>= \b' -> return (a, b')
