@@ -28,5 +28,5 @@ jobs:
         shell: bash
         run: |
             set -ex
-            curl -sSL https://get.haskellstack.org/ | sh -s - -f
+            stack upgrade || curl -sSL https://get.haskellstack.org/ | sh -s - -f
             stack test --fast --no-terminal --resolver=${{ matrix.resolver }}
