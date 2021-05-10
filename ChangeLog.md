@@ -1,5 +1,9 @@
 # ChangeLog for file-embed
 
+## 0.0.14.0
+
+* Add `embedFileIfExists`
+
 ## 0.0.13.0
 
 * Ensure that directory listings are returned in sorted order for reproducibility [yesodweb/yesod#1684](https://github.com/yesodweb/yesod/issues/1684)

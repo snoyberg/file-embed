@@ -98,6 +98,8 @@ embedFile fp =
 -- >
 -- > maybeMyFile :: Maybe Data.ByteString.ByteString
 -- > maybeMyFile = $(embedFileIfExists "dirName/fileName")
+--
+-- @since 0.0.14.0
 embedFileIfExists :: FilePath -> Q Exp
 embedFileIfExists fp = do
   mbs <- runIO maybeFile
