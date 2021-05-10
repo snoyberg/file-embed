@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Monad (unless)
+import qualified Data.ByteString as B (ByteString)
 import Data.FileEmbed
 import System.FilePath ((</>))
 
@@ -19,3 +20,9 @@ main = do
         ]
     let str = $(embedStringFile "test/sample/foo") :: String
     filter (/= '\r') str @?= "foo\n"
+
+    let mbs = $(embedFileIfExists "test/sample/foo")
+    mbs @?= Just "foo\r\n"
+
+    let mbs2 = $(embedFileIfExists "test/sample/foo2") :: Maybe B.ByteString
+    mbs2 @?= Nothing
