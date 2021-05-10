@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Monad (unless)
-import qualified Data.ByteString as B (ByteString)
+import qualified Data.ByteString as B (ByteString, filter)
 import Data.FileEmbed
 import System.FilePath ((</>))
 
@@ -22,7 +22,7 @@ main = do
     filter (/= '\r') str @?= "foo\n"
 
     let mbs = $(embedFileIfExists "test/sample/foo")
-    mbs @?= Just "foo\r\n"
+    fmap (B.filter (/= fromIntegral (fromEnum '\r'))) mbs @?= Just "foo\n"
 
     let mbs2 = $(embedFileIfExists "test/sample/foo2") :: Maybe B.ByteString
     mbs2 @?= Nothing
