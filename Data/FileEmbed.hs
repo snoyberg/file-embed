@@ -19,6 +19,7 @@
 module Data.FileEmbed
     ( -- * Embed at compile time
       embedFile
+    , embedFileIfExists
     , embedOneFileOf
     , embedDir
     , embedDirListing
@@ -60,13 +61,14 @@ import qualified Data.ByteString.Internal as B
 #endif
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents, canonicalizePath)
-import Control.Exception (throw, ErrorCall(..))
-import Control.Monad (filterM)
+import Control.Exception (throw, tryJust, ErrorCall(..))
+import Control.Monad (filterM, guard)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import Control.Arrow ((&&&), second)
 import Control.Applicative ((<$>))
 import Data.ByteString.Unsafe (unsafePackAddressLen)
+import System.IO.Error (isDoesNotExistError)
 import System.IO.Unsafe (unsafePerformIO)
 import System.FilePath ((</>), takeDirectory, takeExtension)
 import Data.String (fromString)
@@ -86,6 +88,31 @@ embedFile fp =
     qAddDependentFile fp >>
 #endif
   (runIO $ B.readFile fp) >>= bsToExp
+
+-- | Maybe embed a single file in your source code depending on whether or not file exists.
+--
+-- Warning: When a build is compiled with the file missing, a recompile when the file exists might not trigger an embed of the file.
+-- You might try to fix this by doing a clean build.
+--
+-- > import qualified Data.ByteString
+-- >
+-- > maybeMyFile :: Maybe Data.ByteString.ByteString
+-- > maybeMyFile = $(embedFileIfExists "dirName/fileName")
+embedFileIfExists :: FilePath -> Q Exp
+embedFileIfExists fp = do
+  mbs <- runIO maybeFile
+  case mbs of
+    Nothing -> [| Nothing |]
+    Just bs -> do
+#if MIN_VERSION_template_haskell(2,7,0)
+      qAddDependentFile fp
+#endif
+      [| Just $(bsToExp bs) |]
+  where
+    maybeFile :: IO (Maybe B.ByteString)
+    maybeFile = 
+      either (const Nothing) Just <$> 
+      tryJust (guard . isDoesNotExistError) (B.readFile fp)
 
 -- | Embed a single existing file in your source code
 -- out of list a list of paths supplied.
