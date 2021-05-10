@@ -19,6 +19,7 @@
 module Data.FileEmbed
     ( -- * Embed at compile time
       embedFile
+    , embedFileIfExists
     , embedOneFileOf
     , embedDir
     , embedDirListing
@@ -60,13 +61,14 @@ import qualified Data.ByteString.Internal as B
 #endif
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents, canonicalizePath)
-import Control.Exception (throw, ErrorCall(..))
-import Control.Monad (filterM)
+import Control.Exception (throw, tryJust, ErrorCall(..))
+import Control.Monad (filterM, guard)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import Control.Arrow ((&&&), second)
 import Control.Applicative ((<$>))
 import Data.ByteString.Unsafe (unsafePackAddressLen)
+import System.IO.Error (isDoesNotExistError)
 import System.IO.Unsafe (unsafePerformIO)
 import System.FilePath ((</>), takeDirectory, takeExtension)
 import Data.String (fromString)
@@ -86,6 +88,26 @@ embedFile fp =
     qAddDependentFile fp >>
 #endif
   (runIO $ B.readFile fp) >>= bsToExp
+
+-- | Maybe embed a single file in your source code depending on whether or not file exists.
+--
+-- Warning: Does not use `qAddDependentFile` to force a recompile depending on changes to or appearance of the file.
+--
+-- > import qualified Data.ByteString
+-- >
+-- > maybeMyFile :: Maybe Data.ByteString.ByteString
+-- > maybeMyFile = $(embedFileIfExists "dirName/fileName")
+embedFileIfExists :: FilePath -> Q Exp
+embedFileIfExists fp = runIO maybeFile >>= maybeBsToExp
+  where
+    maybeFile :: IO (Maybe B.ByteString)
+    maybeFile = 
+      either (const Nothing) Just <$> 
+      tryJust (guard . isDoesNotExistError) (B.readFile fp)
+
+    maybeBsToExp :: Maybe B.ByteString -> Q Exp
+    maybeBsToExp Nothing = [| Nothing |]
+    maybeBsToExp (Just bs) = [| Just $(bsToExp bs) |]
 
 -- | Embed a single existing file in your source code
 -- out of list a list of paths supplied.
