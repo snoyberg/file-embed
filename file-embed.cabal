@@ -1,6 +1,6 @@
 name:            file-embed
 version:         0.0.14.0
-license:         BSD3
+license:         BSD2
 license-file:    LICENSE
 author:          Michael Snoyman <michael@snoyman.com>
 maintainer:      Michael Snoyman <michael@snoyman.com>
