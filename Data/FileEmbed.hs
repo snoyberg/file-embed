@@ -39,6 +39,7 @@ module Data.FileEmbed
     , injectFileWith
       -- * Relative path manipulation
     , makeRelativeToProject
+    , makeRelativeToLocationPredicate
       -- * Internal
     , stringToBs
     , bsToExp
@@ -408,7 +409,19 @@ available, you can use the non-@With@ variants.
 --
 -- @since 0.0.10
 makeRelativeToProject :: FilePath -> Q FilePath
-makeRelativeToProject rel = do
+makeRelativeToProject = makeRelativeToLocationPredicate $ (==) ".cabal" . takeExtension
+
+-- | Take a predicate to infer the project root and a relative file path, the given file path is then attached to the inferred project root
+--
+-- This function looks at the source location of the Haskell file calling it,
+-- finds the first parent directory with a file matching the given predicate, and uses that as the
+-- root directory for fixing the relative path.
+--
+-- @$(makeRelativeToLocationPredicate ((==) ".cabal" . takeExtension) "data/foo.txt" >>= embedFile)@
+--
+-- @since 0.0.15.0
+makeRelativeToLocationPredicate :: (FilePath -> Bool) -> FilePath -> Q FilePath
+makeRelativeToLocationPredicate isTargetFile rel = do
     loc <- qLocation
     runIO $ do
         srcFP <- canonicalizePath $ loc_filename loc
@@ -423,8 +436,6 @@ makeRelativeToProject rel = do
             then return Nothing
             else do
                 contents <- getDirectoryContents dir
-                if any isCabalFile contents
+                if any isTargetFile contents
                     then return (Just dir)
                     else findProjectDir dir
-
-    isCabalFile fp = takeExtension fp == ".cabal"
