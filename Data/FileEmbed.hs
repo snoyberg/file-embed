@@ -91,7 +91,7 @@ embedFile fp =
 #endif
   (runIO $ B.readFile fp) >>= bsToExp
 
--- | Embed a file file in your source code.
+-- | Embed a single file in your source code.
 --   Unlike 'embedFile', path is given relative to project root.
 -- @since 0.0.15.1
 embedFileRelative :: FilePath -> Q Exp
