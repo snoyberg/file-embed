@@ -93,6 +93,7 @@ embedFile fp =
 
 -- | Embed a file file in your source code.
 --   Unlike 'embedFile', path is given relative to project root.
+-- @since 0.0.15.1
 embedFileRelative :: FilePath -> Q Exp
 embedFileRelative = embedFile <=< makeRelativeToProject
 
