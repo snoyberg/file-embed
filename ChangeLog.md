@@ -1,6 +1,6 @@
 # ChangeLog for file-embed
 
-## 0.0.15.1
+## 0.0.16.0
 
 * Add `embedFileRelative`
 
