@@ -19,6 +19,7 @@
 module Data.FileEmbed
     ( -- * Embed at compile time
       embedFile
+    , embedFileRelative
     , embedFileIfExists
     , embedOneFileOf
     , embedDir
@@ -63,7 +64,7 @@ import qualified Data.ByteString.Internal as B
 import System.Directory (doesDirectoryExist, doesFileExist,
                          getDirectoryContents, canonicalizePath)
 import Control.Exception (throw, tryJust, ErrorCall(..))
-import Control.Monad (filterM, guard)
+import Control.Monad ((<=<), filterM, guard)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
 import Control.Arrow ((&&&), second)
@@ -89,6 +90,12 @@ embedFile fp =
     qAddDependentFile fp >>
 #endif
   (runIO $ B.readFile fp) >>= bsToExp
+
+-- | Embed a single file in your source code.
+--   Unlike 'embedFile', path is given relative to project root.
+-- @since 0.0.16.0
+embedFileRelative :: FilePath -> Q Exp
+embedFileRelative = embedFile <=< makeRelativeToProject
 
 -- | Maybe embed a single file in your source code depending on whether or not file exists.
 --
