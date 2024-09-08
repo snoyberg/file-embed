@@ -2,7 +2,7 @@
 
 Embed arbitrary files like JSON or plain text into your Haskell code as if they were written inside Haskell.
 
-Note: This library uses Template Haskell for the embeddig.
+Note: This library uses Template Haskell for the embedding.
 
 ## Quickstart
 
