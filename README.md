@@ -4,7 +4,7 @@ Embed arbitrary files like JSON or plain text into your Haskell code as if they 
 
 Note: This library uses Template Haskell for the embeddig.
 
-# Quickstart
+## Quickstart
 
 Add [the latest version](https://hackage.haskell.org/package/file-embed) of `file-embed` to your
 package description `<package>.cabal` or Stack `package.yaml` file.
