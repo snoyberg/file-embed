@@ -22,7 +22,7 @@ $ tree
 └── cabal.project
 ```
 
-you can embedd a file as follows:
+you can embed a file as follows:
 
 ```haskell
 -- file: Main.hs
