@@ -1,6 +1,6 @@
 # file-embed ![Hackage](https://img.shields.io/hackage/v/file-embed.svg) ![Hackage-Deps](https://img.shields.io/hackage-deps/v/file-embed.svg) ![Tests](https://github.com/snoyberg/file-embed/workflows/Tests/badge.svg)
 
-Embedd arbitrary files like JSON or plain text into your Haskell code as if they were written inside Haskell.
+Embed arbitrary files like JSON or plain text into your Haskell code as if they were written inside Haskell.
 
 Note: This library uses Template Haskell for the embeddig.
 
