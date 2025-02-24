@@ -99,8 +99,9 @@ embedFileRelative = embedFile <=< makeRelativeToProject
 
 -- | Maybe embed a single file in your source code depending on whether or not file exists.
 --
--- Warning: When a build is compiled with the file missing, a recompile when the file exists might not trigger an embed of the file.
--- You might try to fix this by doing a clean build.
+-- Warning: When a build is compiled with the file missing, a recompile when the
+-- file exists might not trigger an embed of the file. You might try to fix this
+-- by doing a clean build or using GHC's -fforce-recomp flag.
 --
 -- > import qualified Data.ByteString
 -- >
@@ -120,12 +121,17 @@ embedFileIfExists fp = do
       [| Just $(bsToExp bs) |]
   where
     maybeFile :: IO (Maybe B.ByteString)
-    maybeFile = 
-      either (const Nothing) Just <$> 
+    maybeFile =
+      either (const Nothing) Just <$>
       tryJust (guard . isDoesNotExistError) (B.readFile fp)
 
 -- | Embed a single existing file in your source code
 -- out of list a list of paths supplied.
+--
+-- Warning: When a build is compiled with initial file(s) in the list missing, a
+-- recompile when one of those files exists might not trigger an embed of the
+-- first such file. You might try to fix this by doing a clean build or using
+-- GHC's -fforce-recomp flag.
 --
 -- > import qualified Data.ByteString
 -- >
@@ -147,6 +153,11 @@ embedOneFileOf ps =
         _ -> throw $ ErrorCall "Cannot find file to embed as resource"
 
 -- | Embed a directory recursively in your source code.
+--
+-- Warning: When a build is compiled with a file missing from the directory, a
+-- recompile when that file is added might not trigger an embed of the file. You
+-- might try to fix this by doing a clean build or using GHC's -fforce-recomp
+-- flag.
 --
 -- > import qualified Data.ByteString
 -- >
@@ -230,6 +241,11 @@ embedStringFile fp =
 
 -- | Embed a single existing string file in your source code
 -- out of list a list of paths supplied.
+--
+-- Warning: When a build is compiled with initial file(s) in the list missing, a
+-- recompile when one of those files exists might not trigger an embed of the
+-- first such file. You might try to fix this by doing a clean build or using
+-- GHC's -fforce-recomp flag.
 --
 -- Since 0.0.9
 embedOneStringFileOf :: [FilePath] -> Q Exp
