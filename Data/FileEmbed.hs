@@ -40,6 +40,7 @@ module Data.FileEmbed
     , injectFileWith
       -- * Relative path manipulation
     , makeRelativeToProject
+    , makeRelativeToModule
     , makeRelativeToLocationPredicate
       -- * Internal
     , stringToBs
@@ -433,6 +434,11 @@ available, you can use the non-@With@ variants.
 -- @since 0.0.10
 makeRelativeToProject :: FilePath -> Q FilePath
 makeRelativeToProject = makeRelativeToLocationPredicate $ (==) ".cabal" . takeExtension
+
+-- | Take a relative file path and attach it to the directory containing the
+-- current source file.
+makeRelativeToModule :: FilePath -> Q FilePath
+makeRelativeToModule = makeRelativeToLocationPredicate $ const True
 
 -- | Take a predicate to infer the project root and a relative file path, the given file path is then attached to the inferred project root
 --
